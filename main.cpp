@@ -11,9 +11,11 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include <string>
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "main.h"
 #include "alfoGL.h"
 #include "structs.h"
 
@@ -106,7 +108,7 @@ int main (int argc, char **argv)
     t_point target;
     t_point position = {10, -10, 10, 0};
     double _phi = 0, _theta = 0;
-    displayMatrix(proj*view);
+    displayMatrix(view*proj);
 
     // E
     /*gl->addLine(0,0,-3, 0,5,-3, 50,50,50);
@@ -161,7 +163,7 @@ int main (int argc, char **argv)
     gl->addLine(16,2,-3, 17,2,-3, 50,50,50);
     gl->addLine(16,3,-3, 17,3,-3, 50,50,50);
     gl->addLine(16,4,-3, 19,4,-3, 50,50,50);
-    gl->addLine(15,5,-3,19,5,-3, 50,50,50);
+    gl->addLine(15,5,-3, 19,5,-3, 50,50,50);
 
     // I
     gl->addLine(20,0,-3, 21,0,-3, 50,50,50);
@@ -172,14 +174,6 @@ int main (int argc, char **argv)
     /**
      * Maison
      */
-
-
-/*gl->addLine(10,0,0, 9.8,-0.2,0, 255,0,0);
-gl->addLine(10,0,0, 9.8, 0.2,0, 255,0,0);
-gl->addLine(0,10,0, -0.2,9.8,0, 0,255,0);
-gl->addLine(0,10,0,  0.2,9.8,0, 0,255,0);
-gl->addLine(0,0,10, -0.2,0,9.8, 0,0,255);
-gl->addLine(0,0,10,  0.2,0,9.8, 0,0,255);*/
 
     // Socle
     gl->addLine(0,0,0, 4,0,0, 200,200,200);
@@ -212,41 +206,13 @@ gl->addLine(0,0,10,  0.2,0,9.8, 0,0,255);*/
 
     gl->addLine(0,1.5,4.5, 4,1.5,4.5, 200,200,200);
 
-    //gl->addLine(-10,-10,-10, 10,10,10, 255,255,255);
-
-    /**
-     * Maison Surface
-     */
-
-    // Socle
-    //gl->addSquare(0,0,0, 4,3,0, 255,255,255);
-
-    // Murs
-    //gl->addSquare(0,0,0, 4,0,3, 255,255,255);
-
-
-    // Toit
-    //gl->addSquare(0,0,3, 4,3,3, 255,255,255);
-
-
-    //gl->addTriangle(0,0,0, 4,0,0, 0,0,3, 0,255,0);
-    gl->addTriangle(0,0,0, 4,0,0, 0,3,0, 0,0,255);
-    gl->addTriangle(0,0,3, 4,0,3, 0,3,3, 0,255,0);
-    gl->addTriangle(0,0,0, 0,3,0, 0,0,3, 255,0,0);
-    //gl->addSquare(0,0,0, 4,3,0, 255,0,0);
-
-
-    /*for(int x = -1; x < 1;)
-    {
-        gl->addPoint(x, x, 0);
-        x+= 0.1;
-    }*/
-
     SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY/3, SDL_DEFAULT_REPEAT_INTERVAL);
     // Main Loop
     int FPS = 0;
     int pastFPS = 0;
     int past = 0;
+    t_matrix4 matrix;
+    int mode = MODE_NONE;
     bool done = false;
     while (!done)
     {
@@ -261,48 +227,266 @@ gl->addLine(0,0,10,  0.2,0,9.8, 0,0,255);*/
 
             case SDL_KEYDOWN:
             {
-                // exit if ESCAPE is pressed
-                /*if (event.key.keysym.sym == SDLK_ESCAPE)
-                    done = true;
-                if(event.key.keysym.sym == SDLK_z)
-                {
-                    position.x += 1;
-                    target.x += 1;
-                    gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,1,1);
-                    cout << "test";
-                }*/
-
                 switch (event.key.keysym.sym)
                 {
                 case SDLK_ESCAPE:
                     done = true;
                     exit;
                     break;
-                case SDLK_1:
+                case SDLK_F1:
+                    gl->m_show_help = !gl->m_show_help;
+                    break;
+                case SDLK_F2:
                     gl->setAAEnabled(!gl->getAAEnabled());
                     break;
-                case SDLK_2:
-                    gl->changed = !gl->changed;
+                case SDLK_F3:
+                    gl->m_show_debug = !gl->m_show_debug;
                     break;
-                case SDLK_UP:
+                case SDLK_F4:
+                    gl->m_show_z = !gl->m_show_z;
+                    break;
+                case SDLK_F5:
+                    gl->m_show_axis = !gl->m_show_axis;
+                    break;
+                case SDLK_F6:
+                    gl->m_proj_orth = !gl->m_proj_orth;
+                    break;
+
+                case SDLK_w:
                     position.x -= 0.5;
                     target.x -= 0.5;
                     gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
                     break;
-                case SDLK_DOWN:
+                case SDLK_s:
                     position.x += 0.5;
                     target.x += 0.5;
                     gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
                     break;
-                case SDLK_LEFT:
+                case SDLK_a:
                     position.y -= 0.5;
                     target.y -= 0.5;
                     gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
                     break;
-                case SDLK_RIGHT:
+                case SDLK_d:
                     position.y += 0.5;
                     target.y += 0.5;
                     gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
+                    break;
+                case SDLK_PAGEUP:
+                    position.z += 0.5;
+                    target.z += 0.5;
+                    gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
+                    break;
+                case SDLK_PAGEDOWN:
+                    position.z -= 0.5;
+                    target.z -= 0.5;
+                    gl->lookAt(position.x,position.y,position.z,target.x,target.y,target.z,0,0,1);
+                    break;
+
+                // Set Mode
+                case SDLK_r:
+                    if(mode == ROTATION_X) mode = ROTATION_Y;
+                    else if (mode == ROTATION_Y) mode = ROTATION_Z;
+                    else mode = ROTATION_X;
+                    break;
+                case SDLK_t:
+                    if(mode == TRANSLATION_X) mode = TRANSLATION_Y;
+                    else if (mode == TRANSLATION_Y) mode = TRANSLATION_Z;
+                    else mode = TRANSLATION_X;
+                    break;
+                case SDLK_v:
+                    if(mode == SYMMETRY_O) mode = SYMMETRY_X;
+                    else if (mode == SYMMETRY_X) mode = SYMMETRY_Y;
+                    else if (mode == SYMMETRY_Y) mode = SYMMETRY_Z;
+                    else mode = SYMMETRY_O;
+                    break;
+                case SDLK_h:
+                    mode = HOMOTHETY;
+                    break;
+                case SDLK_c:
+                    mode = SHEAR;
+                    break;
+
+                // Plus or Minus
+                case SDLK_KP_PLUS:
+                    switch(mode)
+                    {
+                        // Rotations
+                        case ROTATION_X:
+                            matrix.m = {1, 0,            0,           0,
+                                        0, cos(M_PI/12), -sin(M_PI/12), 0,
+                                        0, sin(M_PI/12),  cos(M_PI/12), 0,
+                                        0, 0,            0,           1};
+                            break;
+                        case ROTATION_Y:
+                            matrix.m = {cos(M_PI/12), 0, sin(M_PI/12), 0,
+                                        0, 1, 0, 0,
+                                        -sin(M_PI/12), 0, cos(M_PI/12), 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case ROTATION_Z:
+                            matrix.m = {cos(M_PI/12), -sin(M_PI/12), 0, 0,
+                                        sin(M_PI/12), cos(M_PI/12), 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+
+                        // Translations
+                        case TRANSLATION_X:
+                            matrix.m = {1, 0, 0, 0.5,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case TRANSLATION_Y:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, 0.5,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case TRANSLATION_Z:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0.5,
+                                        0, 0, 0, 1};
+                            break;
+
+                        // Symmetries
+                        case SYMMETRY_O:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_X:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_Y:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0,  1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_Z:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0,  1, 0,
+                                        0, 0, 0, 1};
+                            break;
+
+                        // Homothety
+                        case HOMOTHETY:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1./1.1};
+                            break;
+
+                        // Shear
+                        case SHEAR:
+                            matrix.m = {1, 0, 0, 0,
+                                        1, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+
+                        default:
+                            matrix.m = {1,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+                    }
+                    gl->applyMatrix(matrix);
+                    break;
+
+                case SDLK_KP_MINUS:
+                    switch(mode)
+                    {
+                        // Rotations
+                        case ROTATION_X:
+                            matrix.m = {1, 0,             0,            0,
+                                        0,  cos(M_PI/12), sin(M_PI/12), 0,
+                                        0, -sin(M_PI/12), cos(M_PI/12), 0,
+                                        0,  0,            0,            1};
+                            break;
+                        case ROTATION_Y:
+                            matrix.m = {cos(M_PI/12), 0, -sin(M_PI/12), 0,
+                                        0, 1, 0, 0,
+                                        sin(M_PI/12), 0, cos(M_PI/12), 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case ROTATION_Z:
+                            matrix.m = {cos(M_PI/12), sin(M_PI/12), 0, 0,
+                                        -sin(M_PI/12), cos(M_PI/12), 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+
+                        // Translations
+                        case TRANSLATION_X:
+                            matrix.m = {1, 0, 0, -0.5,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case TRANSLATION_Y:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, -0.5,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case TRANSLATION_Z:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, -0.5,
+                                        0, 0, 0, 1};
+                            break;
+
+                        // Symmetries
+                        case SYMMETRY_O:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_X:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_Y:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0,  1, 0, 0,
+                                        0, 0, -1, 0,
+                                        0, 0, 0, 1};
+                            break;
+                        case SYMMETRY_Z:
+                            matrix.m = {-1, 0, 0, 0,
+                                        0, -1, 0, 0,
+                                        0, 0,  1, 0,
+                                        0, 0, 0, 1};
+
+                        // Homothety
+                        case HOMOTHETY:
+                            matrix.m = {1, 0, 0, 0,
+                                        0, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1.1};
+                            break;
+
+                        // Shear
+                        case SHEAR:
+                            matrix.m = {1, 0, 0, 0,
+                                        -1, 1, 0, 0,
+                                        0, 0, 1, 0,
+                                        0, 0, 0, 1};
+                            break;
+
+                        default:
+                            matrix.m = {1,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+                    }
+                    gl->applyMatrix(matrix);
                     break;
                 }
                 break;
@@ -344,6 +528,7 @@ gl->addLine(0,0,10,  0.2,0,9.8, 0,0,255);*/
         if ( currentTime - past >= 16 )
         {
             // Display
+            gl->setShownMode(getStringFromMode(mode));
             gl->show();
             FPS++;
         }
@@ -364,4 +549,54 @@ gl->addLine(0,0,10,  0.2,0,9.8, 0,0,255);*/
     cout << "Good Bye!" << endl;
     SDL_Quit();
     return EXIT_SUCCESS;
+}
+
+string getStringFromMode(int mode)
+{
+    switch(mode)
+    {
+        case ROTATION_X:
+            return "Mode: Rotation around X-axis.";
+            break;
+        case ROTATION_Y:
+            return "Mode: Rotation around Y-axis.";
+            break;
+        case ROTATION_Z:
+            return "Mode: Rotation around Z-axis.";
+            break;
+
+        case TRANSLATION_X:
+            return "Mode: Translation on the X-axis.";
+            break;
+        case TRANSLATION_Y:
+            return "Mode: Translation on the Y-axis.";
+            break;
+        case TRANSLATION_Z:
+            return "Mode: Translation on the Z-axis.";
+            break;
+
+        case SYMMETRY_O:
+            return "Mode: Symmetry by O point.";
+            break;
+        case SYMMETRY_X:
+            return "Mode: Symmetry by X-axis";
+            break;
+        case SYMMETRY_Y:
+            return "Mode: Symmetry by Y-axis.";
+            break;
+        case SYMMETRY_Z:
+            return "Mode: Symmetry by Z-axis.";
+            break;
+
+        case HOMOTHETY:
+            return "Mode: Homothety.";
+            break;
+
+        case SHEAR:
+            return "Mode: Shear.";
+            break;
+
+        default:
+            return "Mode: none.";
+    }
 }

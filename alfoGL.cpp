@@ -8,14 +8,16 @@ using namespace std;
 alfoGL::alfoGL(SDL_Surface* window) : m_window(window)
 {
     // Constructor
-    m_rotation_x = 0;
-    m_rotation_y = 0;
     m_aa_enabled = false;
     m_show_axis = false;
+    m_show_z = false;
+    m_show_help = true;
+    m_show_mode = true;
+    m_proj_orth = false;
     m_font = TTF_OpenFont("font.ttf", 9);
     m_last_fps = 0;
     m_drawn_pixels = 0;
-    changed = false;
+    m_mode = "";
 }
 
 void alfoGL::setPerspective(double angle, double ratio, double near, double far)
@@ -32,13 +34,15 @@ void alfoGL::setPerspective(double angle, double ratio, double near, double far)
 
     projection.m[14] = -1;
 
-    /*projection.m[0] = 0.20;
-    projection.m[5] = 0.20;
-    projection.m[10] = -0.22;
-    projection.m[11] = -1.22;
-    projection.m[15] = 1;*/
+    t_matrix4 projectionOrth = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    projectionOrth.m[0] = 0.20;
+    projectionOrth.m[5] = 0.20;
+    projectionOrth.m[10] = -0.22;
+    projectionOrth.m[11] = -1.22;
+    projectionOrth.m[15] = 1;
 
     m_proj_matrix = projection;
+    m_proj_matrix_orth = projectionOrth;
     m_near = near;
     m_far = far;
 
@@ -56,19 +60,16 @@ void alfoGL::lookAt(double eyeX, double eyeY, double eyeZ, double centerX, doubl
     t_matrix4 matrice = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
     // On effectue les deux produits vectoriels
-
     normal = regard*axe;
     newAxe = normal*regard;
 
     // Normalisation des vecteurs
-
     normal = normal.normalize();
     newAxe = newAxe.normalize();
     regard = regard.normalize();
 
 
     // Introduction des valeurs dans la matrice
-
     matrice.m[0] = normal.x;
     matrice.m[1] = normal.y;
     matrice.m[2] = normal.z;
@@ -84,33 +85,20 @@ void alfoGL::lookAt(double eyeX, double eyeY, double eyeZ, double centerX, doubl
     matrice.m[15] = 1.0;
 
 
-    // Multiplication des matrices, puis translation de la matrice modelview
-
+    // Multiplication des matrices, puis translation de la matrice view
     m_view_matrix = matrice;
     m_view_matrix = m_view_matrix.translate(-eyeX, -eyeY, -eyeZ);
 }
 
-void alfoGL::rotateX(double angle)
-{
-    angle = angle * M_PI / 180;
-    m_rotation_x += angle;
-}
-
-void alfoGL::rotateY(double angle)
-{
-    angle = angle * M_PI / 180;
-    m_rotation_y += angle;
-}
-
-
-void alfoGL::addPoint(double x, double y, double z)
+t_point* alfoGL::addPoint(double x, double y, double z)
 {
     // Converting of homogenous coords
     t_point point = {x, y, z, 1};
     m_scene_points.push_back(point);
+    return &m_scene_points[m_scene_points.size()];
 }
 
-void alfoGL::addLine(double x1, double y1, double z1, double x2, double y2, double z2, Uint8 R, Uint8 G, Uint8 B)
+t_line* alfoGL::addLine(double x1, double y1, double z1, double x2, double y2, double z2, Uint8 R, Uint8 G, Uint8 B)
 {
     t_point point1 = {x1, y1, z1, 1};
     t_point point2 = {x2, y2, z2, 1};
@@ -120,79 +108,40 @@ void alfoGL::addLine(double x1, double y1, double z1, double x2, double y2, doub
     line.point2 = point2;
     line.color = {R, G, B};
     m_scene_lines.push_back(line);
-    //m_scene_lines[1].push_back(point2);
+
+    return &m_scene_lines[m_scene_lines.size()];
 }
 
-void alfoGL::addTriangle(double x1, double y1, double z1, double x2, double y2, double z2, double x3, double y3, double z3, Uint8 R, Uint8 G, Uint8 B)
+void alfoGL::applyMatrix(t_matrix4 m)
 {
-    t_point point1 = {x1, y1, z1, 1};
-    t_point point2 = {x2, y2, z2, 1};
-    t_point point3 = {x3, y3, z3, 1};
-
-    t_triangle triangle;
-    triangle.point1 = {x1, y1, z1, 1};
-    triangle.point2 = {x2, y2, z2, 1};
-    triangle.point3 = {x3, y3, z3, 1};
-    triangle.color = {R, G, B};
-
-    m_scene_triangles.push_back(triangle);
-
-}
-
-void alfoGL::addSquare(double x1, double y1, double z1, double x2, double y2, double z2, Uint8 R, Uint8 G, Uint8 B)
-{
-    t_point point1 = {x1, y1, z1, 1};
-    t_point point2 = {x2, y2, z2, 1};
-    t_point point3 = {x2, y1, (z1+z2)/2, 1};
-    t_point point4 = {x1, y2, (z1+z2)/2, 1};
-
-/*    m_scene_surfaces[0].push_back(point1);
-    m_scene_surfaces[1].push_back(point2);
-    m_scene_surfaces[2].push_back(point3);
-
-
-    m_scene_surfaces[0].push_back(point1);
-    m_scene_surfaces[1].push_back(point2);
-    m_scene_surfaces[2].push_back(point4);*/
-
+    for(int i = 0; i < m_scene_lines.size(); i++)
+    {
+        m_scene_lines[i].point1 = m_scene_lines[i].point1*m;
+        m_scene_lines[i].point2 = m_scene_lines[i].point2*m;
+    }
 }
 
 t_point alfoGL::getProjected (t_point obj)
 {
     // Applying the view matrix
-
-    //obj = obj.rotateX(m_rotation_x);
-    //obj = obj.rotateY(m_rotation_y);
-
     t_point eye = obj*m_view_matrix;
-    //cout << "Eye: " << eye.x << " " << eye.y << " " << eye.z << " " << eye.w << endl;
 
-    //eye = eye.rotateX(m_rotation_x);
-    //eye = eye.rotateY(m_rotation_y);
     // Applying the projection matrix
-    t_point clip = eye*m_proj_matrix;
+    t_point clip;
+    if(m_proj_orth) clip = eye*m_proj_matrix_orth;
+    else clip = eye*m_proj_matrix;
 
-    //cout << "Clip: " << clip.x << " " << clip.y << " " << clip.z << " " << clip.w << endl;
-    t_point ndc;
+    // normalized Device Coordinates
+    t_point ndc = {clip.x/clip.w, -clip.y/clip.w, clip.z/clip.w, 1};
 
-    ndc = {clip.x/clip.w, -clip.y/clip.w, clip.z/clip.w, 1};
-    //cout << "NDC: " << ndc.x << " " << ndc.y << " " << ndc.z << " " << ndc.w << endl;
-
+    // Display Format
     t_point display = {(m_window->w/2)*ndc.x+m_window->w/2, (m_window->h/2)*ndc.y+m_window->h/2, (m_far-m_near)/2*ndc.z+(m_far+m_near)/2};
-    //cout << "Display: " << display.x << " " << display.y << " " << display.z << " " << display.w << endl;
-    //cout << "----------------------" << endl;
+
     return display;
 }
 
 void alfoGL::show()
 {
-    for(int i = 0; i < 1024; i++)
-    {
-        for(int j = 0; j < 600; j++)
-        {
-            m_pixels[i][j].initialized = false;
-        }
-    }
     SDL_FillRect(m_window, 0, SDL_MapRGB(m_window->format, 50, 100, 200));
     SDL_GetError();
 
@@ -226,82 +175,29 @@ void alfoGL::show()
 
     for(int i = 0; i < m_scene_lines.size(); i++)
     {
-        /*if(!changed)
-        {
-            /*t_matrix4 matrix = {-1, 0, 0, 8,
-                                0, -1, 0, 6,
-                                0, 0, -1,  0,
-                                0, 0, 0, 1};
-            t_matrix4 matrix = {1, 0, 1, 0,
-                                0, 1, 0, 0,
-                                0, 0, 1, 0,
-                                0, 0, 0, 1};
-            m_scene_lines[i].point1 = m_scene_lines[i].point1*matrix;
-            m_scene_lines[i].point2 = m_scene_lines[i].point2*matrix;
-        }*/
         t_point display1 = getProjected(m_scene_lines[i].point1);
         t_point display2 = getProjected(m_scene_lines[i].point2);
 
-        //drawLine(display1.x, display1.y, display2.x, display2.y, m_scene_lines[i].color.R, m_scene_lines[i].color.G, m_scene_lines[i].color.B);
         Uint32 color = SDL_MapRGB(m_window->format, m_scene_lines[i].color.R, m_scene_lines[i].color.G, m_scene_lines[i].color.B);
         drawLine(display1.x, display1.y, display2.x, display2.y, color, 0);
 
+        if(m_show_z)
+        {
+            SDL_Rect position1 = {display1.x+2, display1.y-13};
+            SDL_Rect position2 = {display2.x+2, display2.y-13};
 
-        SDL_Rect position1 = {display1.x+2, display1.y-13};
-        SDL_Rect position2 = {display2.x+2, display2.y-13};
+            char text[2][50];
+            sprintf(text[0], "%f", display1.z);
+            sprintf(text[1], "%f", display2.z);
 
-        char text[2][50];
-        sprintf(text[0], "%f", display1.z);
-        sprintf(text[1], "%f", display2.z);
-
-        SDL_Surface *render1 = TTF_RenderText_Blended(m_font, text[0], {255, 255, 255});
-        SDL_Surface *render2 = TTF_RenderText_Blended(m_font, text[1], {255, 255, 255});
-        SDL_BlitSurface(render1, NULL, m_window, &position1);
-        SDL_BlitSurface(render2, NULL, m_window, &position2);
-        SDL_FreeSurface(render1);
-        SDL_FreeSurface(render2);
+            SDL_Surface *render1 = TTF_RenderText_Blended(m_font, text[0], {255, 255, 255});
+            SDL_Surface *render2 = TTF_RenderText_Blended(m_font, text[1], {255, 255, 255});
+            SDL_BlitSurface(render1, NULL, m_window, &position1);
+            SDL_BlitSurface(render2, NULL, m_window, &position2);
+            SDL_FreeSurface(render1);
+            SDL_FreeSurface(render2);
+        }
     }
-
-    for(int i = 0; i < m_scene_triangles.size(); i++)
-    {
-        t_point display1 = getProjected(m_scene_triangles[i].point1);
-        t_point display2 = getProjected(m_scene_triangles[i].point2);
-        t_point display3 = getProjected(m_scene_triangles[i].point3);
-
-        Uint32 color = SDL_MapRGB(m_window->format, m_scene_triangles[i].color.R, m_scene_triangles[i].color.G, m_scene_triangles[i].color.B);
-        drawTriangle(display1.x, display1.y, display2.x, display2.y, display3.x, display3.y, color);
-
-
-        SDL_Rect position1 = {display1.x+2, display1.y-13};
-        SDL_Rect position2 = {display2.x+2, display2.y-13};
-        SDL_Rect position3 = {display3.x+2, display3.y-13};
-
-        char text[3][50];
-        sprintf(text[0], "%f", display1.z);
-        sprintf(text[1], "%f", display2.z);
-        sprintf(text[2], "%f", display3.z);
-
-        SDL_Surface *render1 = TTF_RenderText_Blended(m_font, text[0], {255, 255, 255});
-        SDL_Surface *render2 = TTF_RenderText_Blended(m_font, text[1], {255, 255, 255});
-        SDL_Surface *render3 = TTF_RenderText_Blended(m_font, text[2], {255, 255, 255});
-        SDL_BlitSurface(render1, NULL, m_window, &position1);
-        SDL_BlitSurface(render2, NULL, m_window, &position2);
-        SDL_BlitSurface(render3, NULL, m_window, &position3);
-        SDL_FreeSurface(render1);
-        SDL_FreeSurface(render2);
-        SDL_FreeSurface(render3);
-    }
-    changed = true;
-    /*for(int i = 0; i < m_scene_surfaces[0].size(); i++)
-    {
-        t_point display1 = getProjected(m_scene_surfaces[0][i]);
-        t_point display2 = getProjected(m_scene_surfaces[1][i]);
-        t_point display3 = getProjected(m_scene_surfaces[2][i]);
-
-        //Uint32 color = SDL_MapRGB(m_window->format, m_scene_lines[i].color.R, m_scene_lines[i].color.G, m_scene_lines[i].color.B);
-        //Uint32 color = SDL_MapRGB(m_window->format, m_scene_surfaces[0][i].color.R, m_scene_surfaces[0][i].color.G, m_scene_surfaces[0][i].color.B);
-        drawSurface(display1.x, display1.y, display2.x, display2.y, display3.x, display3.y, 0);
-    }*/
 
     if(m_show_debug)
     {
@@ -326,6 +222,57 @@ void alfoGL::show()
             SDL_FreeSurface(render);
         }
     }
+
+    if(m_show_help)
+    {
+        char text[20][50];
+        sprintf(text[0], "== Available Commands ==");
+        sprintf(text[1], "W,S,A,D: Move on x/y");
+        sprintf(text[2], "Up,Down: Move up/down");
+        sprintf(text[3], "");
+        sprintf(text[4], "F1: Toggle this help");
+        sprintf(text[5], "F2: Toggle Antialiasing");
+        sprintf(text[6], "F3: Toggle Debug");
+        sprintf(text[7], "F4: Toggle Z-buffer");
+        sprintf(text[8], "F5: Toggle Axis");
+        sprintf(text[9], "F6: Toggle Projection Mode");
+        sprintf(text[10], "");
+        sprintf(text[11], "R: Rotations");
+        sprintf(text[12], "T: Translations");
+        sprintf(text[13], "V: Symmetries");
+        sprintf(text[14], "H: Homothety");
+        sprintf(text[15], "C: Shear");
+        sprintf(text[16], "");
+        sprintf(text[17], "");
+        sprintf(text[18], "");
+        sprintf(text[19], "");
+
+        SDL_Rect position = {m_window->w-145, 0};
+        for(int i = 0; i < 20; i++)
+        {
+            position.y = 10*i+5;
+            SDL_Surface *render = TTF_RenderText_Blended(m_font, text[i], {255, 255, 255});
+            SDL_BlitSurface(render, NULL, m_window, &position);
+            SDL_FreeSurface(render);
+        }
+    }
+
+    if(m_show_mode)
+    {
+        SDL_Rect position = {5, m_window->h-15};
+        SDL_Surface *render = TTF_RenderText_Blended(m_font, (char*)m_mode.c_str(), {255, 255, 255});
+        SDL_BlitSurface(render, NULL, m_window, &position);
+        SDL_FreeSurface(render);
+    }
+
+    SDL_Surface *image;
+    SDL_Rect positionImage;
+    positionImage.x = m_window->w-132;
+    positionImage.y = m_window->h-50;
+    image = IMG_Load("ja3GL.gif");
+    //image = SDL_LoadBMP("ja3GL.bmp");
+    SDL_BlitSurface(image, NULL, m_window, &positionImage);
+    //SDL_FreeSurface(image);
 
     m_drawn_pixels = 0;
     SDL_Flip(m_window);
@@ -356,30 +303,27 @@ void alfoGL::setLastFps(int fps)
     m_last_fps = fps;
 }
 
-void alfoGL::setPixel(int x, int y, Uint32 color, double depth)
+void alfoGL::setShownMode(string mode)
+{
+    m_mode = mode;
+}
+
+void alfoGL::setPixel(int x, int y, Uint32 color)
+{
+    if(x>0 && y>0 && x<m_window->w && y<m_window->h)
+    {
+        *((Uint32*)(m_window->pixels) + x + y * m_window->w) = color;
+        m_drawn_pixels++;
+    }
+}
+
+void alfoGL::setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
 {
   if(x>0 && y>0 && x<m_window->w && y<m_window->h)
   {
-      if(m_pixels[x][y].initialized) {
-          if(depth < m_pixels[x][y].depth)
-          {
-              m_pixels[x][y].depth = depth;
-              *((Uint32*)(m_window->pixels) + x + y * m_window->w) = color;
-          }
-      }
-      else
-      {
-            m_pixels[x][y] = {x, y, color, depth, true};
-            *((Uint32*)(m_window->pixels) + x + y * m_window->w) = color;
-            m_drawn_pixels++;
-      }
+      *((Uint32*)(m_window->pixels) + x + y * m_window->w) = SDL_MapRGB(m_window->format, R, G, B);
+      m_drawn_pixels++;
   }
-}
-
-void alfoGL::setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B, double depth)
-{
-  if(x>0 && y>0 && x<m_window->w && y<m_window->h)
-    *((Uint32*)(m_window->pixels) + x + y * m_window->w) = SDL_MapRGB(m_window->format, R, G, B);
 }
 
 void alfoGL::getPixelColor(int x, int y, Uint8 *r, Uint8 *g, Uint8 *b, Uint8 *a)
@@ -388,13 +332,12 @@ void alfoGL::getPixelColor(int x, int y, Uint8 *r, Uint8 *g, Uint8 *b, Uint8 *a)
     SDL_GetRGBA(*((Uint32 *)m_window->pixels + x + y * m_window->w),m_window->format,r,g,b,a);
 }
 
-void alfoGL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted, bool disable_aa, double depth1, double depth2)
+void alfoGL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
 {
-    //cout << "DrawLine called with: (" << x1 << ", " << y1 << ") and (" << x2 << ", " << y2 << ")." << endl;
     if((x1 < 0 || x1 >= m_window->w) && (x2 < 0 || x2 >= m_window->w) && (y1 < 0 || y1 >= m_window->h) && (y2 < 0 || y2 >= m_window->h))
        return;
 
-    if(m_aa_enabled && !disable_aa)
+    if(m_aa_enabled)
         drawLineAA(x1, y1, x2, y2, color, dotted);
     else
     {
@@ -411,7 +354,7 @@ void alfoGL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted, 
 
         for(double i = 0; i < length; i += 1)
         {
-          setPixel( (int)x, (int)y, color, depth1+((depth2-depth1)/length)*i);
+          setPixel((int)x, (int)y, color);
           x += addx;
           y += addy;
         }
@@ -527,60 +470,6 @@ void alfoGL::drawLineAA(int x1, int y1, int x2, int y2, Uint32 color, int dotted
      xf += grad;
     }
   }
-}
-
-
-void alfoGL::drawTriangle(double x1, double y1, double x2, double y2, double x3, double y3, Uint32 color, double depth1, double depth2, double depth3)
-{
-    double x = x2 - x1;
-    double y = y2 - y1;
-    double length = sqrt( x*x + y*y );
-
-    double addx = x / length;
-    double addy = y / length;
-
-    x = x1;
-    y = y1;
-
-    for(double i = 0; i < length; i += 1)
-    {
-      //drawPixel( (int)x, (int)y, R, G, B );
-      drawLine((int)x, (int)y, x3, y3, color, 0, true, (depth1+(depth2-depth1)/length)*i, depth3);
-      x += addx;
-      y += addy;
-    }
-
-    x = x3 - x1;
-    y = y3 - y1;
-    length = sqrt( x*x + y*y );
-    addx = x / length;
-    addy = y / length;
-    x = x3;
-    y = y3;
-
-    for(double i = 0; i < length; i += 1)
-    {
-      //drawPixel( (int)x, (int)y, R, G, B );
-      drawLine((int)x, (int)y, x1, y1, color, 0, true, (depth3+(depth1-depth3)/length)*i, depth2);
-      x += addx;
-      y += addy;
-    }
-
-    x = x3 - x2;
-    y = y3 - y2;
-    length = sqrt( x*x + y*y );
-    addx = x / length;
-    addy = y / length;
-    x = x2;
-    y = y2;
-
-    for(double i = 0; i < length; i += 1)
-    {
-      //drawPixel( (int)x, (int)y, R, G, B );
-      drawLine((int)x, (int)y, x1, y1, color, 0, true, (depth2+(depth3-depth2)/length)*i, depth1);
-      x += addx;
-      y += addy;
-    }
 }
 
 alfoGL::~alfoGL()
