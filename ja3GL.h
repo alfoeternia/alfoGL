@@ -1,5 +1,5 @@
-#ifndef ALFOGL_H
-#define ALFOGL_H
+#ifndef ja3GL_H
+#define ja3GL_H
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -9,11 +9,11 @@
 #include <string>
 #include "structs.h"
 
-class alfoGL
+class ja3GL
 {
     public:
-        alfoGL(SDL_Surface* window);
-        ~alfoGL();
+        ja3GL(SDL_Surface* window);
+        ~ja3GL();
 
         // Config
         bool m_aa_enabled;
@@ -80,4 +80,4 @@ class alfoGL
         t_matrix4 m_proj_matrix_orth;
 };
 
-#endif // ALFOGL_H
+#endif // ja3GL_H

@@ -1,5 +1,5 @@
 /**
- * alfoGL
+ * ja3GL
  * ------------------
  * 3D Graphic Library
  *
@@ -16,7 +16,7 @@
 #include <SDL_ttf.h>
 
 #include "main.h"
-#include "alfoGL.h"
+#include "ja3GL.h"
 #include "structs.h"
 
 using namespace std;
@@ -69,7 +69,7 @@ int main (int argc, char **argv)
     cinfo << "SDL_ttf loaded successfully." << endl;
 
     // Create a new Window
-    SDL_WM_SetCaption("alfoGL Demo", NULL);
+    SDL_WM_SetCaption("ja3GL Demo", NULL);
     SDL_Surface* screen = SDL_SetVideoMode(1024, 768, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
     //SDL_Surface* screen = SDL_SetVideoMode(1680, 1050, 32, SDL_FULLSCREEN|SDL_HWSURFACE|SDL_DOUBLEBUF);
 
@@ -82,10 +82,10 @@ int main (int argc, char **argv)
     cinfo << "SDL Window created successfully." << endl;
 
     // Init 3D renderer
-    alfoGL *gl = new alfoGL(screen);
+    ja3GL *gl = new ja3GL(screen);
     int a = 0;
     int b = 0;
-    gl->lookAt(10,-10,10,0,0,0,0,0,1);
+    gl->lookAt(10,10,10,0,0,0,0,0,1);
     //gl->lookAt(0,34,0,0,0,0,0,0,-1);
     gl->setAAEnabled(true);
     gl->setShowAxis(true);
@@ -111,7 +111,7 @@ int main (int argc, char **argv)
     displayMatrix(view*proj);
 
     // E
-    /*gl->addLine(0,0,-3, 0,5,-3, 50,50,50);
+    gl->addLine(0,0,-3, 0,5,-3, 50,50,50);
     gl->addLine(1,1,-3, 1,2,-3, 50,50,50);
     gl->addLine(1,3,-3, 1,4,-3, 50,50,50);
     gl->addLine(2,2,-3, 2,3,-3, 50,50,50);
@@ -169,7 +169,7 @@ int main (int argc, char **argv)
     gl->addLine(20,0,-3, 21,0,-3, 50,50,50);
     gl->addLine(20,5,-3, 21,5,-3, 50,50,50);
     gl->addLine(20,0,-3, 20,5,-3, 50,50,50);
-    gl->addLine(21,0,-3, 21,5,-3, 50,50,50);*/
+    gl->addLine(21,0,-3, 21,5,-3, 50,50,50);
 
     /**
      * Maison
@@ -395,6 +395,7 @@ int main (int argc, char **argv)
 
                         default:
                             matrix.m = {1,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+                            break;
                     }
                     gl->applyMatrix(matrix);
                     break;
@@ -485,6 +486,7 @@ int main (int argc, char **argv)
 
                         default:
                             matrix.m = {1,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+                            break;
                     }
                     gl->applyMatrix(matrix);
                     break;
@@ -498,6 +500,9 @@ int main (int argc, char **argv)
 
                 _theta -= event.motion.xrel*0.5;
                 _phi -= event.motion.yrel*0.5;
+
+                cout << "theta=" << _theta << endl;
+                cout << "phi=" << _phi << endl;
 
                 t_point _forward = {0, 0, 0, 0};
 
@@ -536,7 +541,7 @@ int main (int argc, char **argv)
         if ( currentTime - pastFPS >= 1000 )
         {
             static char buffer[30] = {0};
-            sprintf(buffer, "alfoGL Demo :: %d FPS", FPS);
+            sprintf(buffer, "ja3GL Demo :: %d FPS", FPS);
             gl->setLastFps(FPS);
             SDL_WM_SetCaption(buffer, 0);
 
@@ -598,5 +603,6 @@ string getStringFromMode(int mode)
 
         default:
             return "Mode: none.";
+            break;
     }
 }

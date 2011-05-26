@@ -1,11 +1,11 @@
 #include <iostream>
 #include <cmath>
 #include <ctime>
-#include "alfoGL.h"
+#include "ja3GL.h"
 
 using namespace std;
 
-alfoGL::alfoGL(SDL_Surface* window) : m_window(window)
+ja3GL::ja3GL(SDL_Surface* window) : m_window(window)
 {
     // Constructor
     m_aa_enabled = false;
@@ -20,7 +20,7 @@ alfoGL::alfoGL(SDL_Surface* window) : m_window(window)
     m_mode = "";
 }
 
-void alfoGL::setPerspective(double angle, double ratio, double near, double far)
+void ja3GL::setPerspective(double angle, double ratio, double near, double far)
 {
     t_matrix4 projection = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
@@ -48,7 +48,7 @@ void alfoGL::setPerspective(double angle, double ratio, double near, double far)
 
 }
 
-void alfoGL::lookAt(double eyeX, double eyeY, double eyeZ, double centerX, double centerY, double centerZ, double upX, double upY, double upZ)
+void ja3GL::lookAt(double eyeX, double eyeY, double eyeZ, double centerX, double centerY, double centerZ, double upX, double upY, double upZ)
 {
     // Creating Vertexs
     t_point axe = {upX, upY, upZ, 0};
@@ -90,7 +90,7 @@ void alfoGL::lookAt(double eyeX, double eyeY, double eyeZ, double centerX, doubl
     m_view_matrix = m_view_matrix.translate(-eyeX, -eyeY, -eyeZ);
 }
 
-t_point* alfoGL::addPoint(double x, double y, double z)
+t_point* ja3GL::addPoint(double x, double y, double z)
 {
     // Converting of homogenous coords
     t_point point = {x, y, z, 1};
@@ -98,7 +98,7 @@ t_point* alfoGL::addPoint(double x, double y, double z)
     return &m_scene_points[m_scene_points.size()];
 }
 
-t_line* alfoGL::addLine(double x1, double y1, double z1, double x2, double y2, double z2, Uint8 R, Uint8 G, Uint8 B)
+t_line* ja3GL::addLine(double x1, double y1, double z1, double x2, double y2, double z2, Uint8 R, Uint8 G, Uint8 B)
 {
     t_point point1 = {x1, y1, z1, 1};
     t_point point2 = {x2, y2, z2, 1};
@@ -112,7 +112,7 @@ t_line* alfoGL::addLine(double x1, double y1, double z1, double x2, double y2, d
     return &m_scene_lines[m_scene_lines.size()];
 }
 
-void alfoGL::applyMatrix(t_matrix4 m)
+void ja3GL::applyMatrix(t_matrix4 m)
 {
     for(int i = 0; i < m_scene_lines.size(); i++)
     {
@@ -121,7 +121,7 @@ void alfoGL::applyMatrix(t_matrix4 m)
     }
 }
 
-t_point alfoGL::getProjected (t_point obj)
+t_point ja3GL::getProjected (t_point obj)
 {
     // Applying the view matrix
     t_point eye = obj*m_view_matrix;
@@ -140,7 +140,7 @@ t_point alfoGL::getProjected (t_point obj)
     return display;
 }
 
-void alfoGL::show()
+void ja3GL::show()
 {
     SDL_FillRect(m_window, 0, SDL_MapRGB(m_window->format, 50, 100, 200));
     SDL_GetError();
@@ -205,7 +205,7 @@ void alfoGL::show()
         if(m_aa_enabled) sprintf(aa, "ON");
 
         char text[10][50];
-        sprintf(text[0], "== alfoGL Rendering Engine ==");
+        sprintf(text[0], "== ja3GL Rendering Engine ==");
         sprintf(text[1], "FPS: %d", m_last_fps);
         sprintf(text[2], "Anti Aliasing x2: %s", aa);
         sprintf(text[3], "Vectors: %d", m_scene_points.size()+m_scene_lines.size());
@@ -278,37 +278,37 @@ void alfoGL::show()
     SDL_Flip(m_window);
 }
 
-bool alfoGL::getAAEnabled()
+bool ja3GL::getAAEnabled()
 {
     return m_aa_enabled;
 }
 
-void alfoGL::setAAEnabled(bool mode)
+void ja3GL::setAAEnabled(bool mode)
 {
     m_aa_enabled = mode;
 }
 
-void alfoGL::setShowAxis(bool mode)
+void ja3GL::setShowAxis(bool mode)
 {
     m_show_axis = mode;
 }
 
-void alfoGL::setShowDebug(bool mode)
+void ja3GL::setShowDebug(bool mode)
 {
     m_show_debug = mode;
 }
 
-void alfoGL::setLastFps(int fps)
+void ja3GL::setLastFps(int fps)
 {
     m_last_fps = fps;
 }
 
-void alfoGL::setShownMode(string mode)
+void ja3GL::setShownMode(string mode)
 {
     m_mode = mode;
 }
 
-void alfoGL::setPixel(int x, int y, Uint32 color)
+void ja3GL::setPixel(int x, int y, Uint32 color)
 {
     if(x>0 && y>0 && x<m_window->w && y<m_window->h)
     {
@@ -317,7 +317,7 @@ void alfoGL::setPixel(int x, int y, Uint32 color)
     }
 }
 
-void alfoGL::setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
+void ja3GL::setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
 {
   if(x>0 && y>0 && x<m_window->w && y<m_window->h)
   {
@@ -326,13 +326,13 @@ void alfoGL::setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
   }
 }
 
-void alfoGL::getPixelColor(int x, int y, Uint8 *r, Uint8 *g, Uint8 *b, Uint8 *a)
+void ja3GL::getPixelColor(int x, int y, Uint8 *r, Uint8 *g, Uint8 *b, Uint8 *a)
 {
   if(x>0 && y>0 && x<m_window->w && y<m_window->h)
     SDL_GetRGBA(*((Uint32 *)m_window->pixels + x + y * m_window->w),m_window->format,r,g,b,a);
 }
 
-void alfoGL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
+void ja3GL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
 {
     if((x1 < 0 || x1 >= m_window->w) && (x2 < 0 || x2 >= m_window->w) && (y1 < 0 || y1 >= m_window->h) && (y2 < 0 || y2 >= m_window->h))
        return;
@@ -361,7 +361,7 @@ void alfoGL::drawLine(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
     }
 }
 
-void alfoGL::drawLineAA(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
+void ja3GL::drawLineAA(int x1, int y1, int x2, int y2, Uint32 color, int dotted)
 {
   int xd, yd, x, y, to_dot = 0;
   double grad,xf,yf;
@@ -472,7 +472,7 @@ void alfoGL::drawLineAA(int x1, int y1, int x2, int y2, Uint32 color, int dotted
   }
 }
 
-alfoGL::~alfoGL()
+ja3GL::~ja3GL()
 {
     // Destructor
 }
