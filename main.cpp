@@ -85,7 +85,7 @@ int main (int argc, char **argv)
     ja3GL *gl = new ja3GL(screen);
     int a = 0;
     int b = 0;
-    gl->lookAt(10,10,10,0,0,0,0,0,1);
+    gl->lookAt(10,-10,10,0,0,0,0,0,1);
     //gl->lookAt(0,34,0,0,0,0,0,0,-1);
     gl->setAAEnabled(true);
     gl->setShowAxis(true);
@@ -500,9 +500,6 @@ int main (int argc, char **argv)
 
                 _theta -= event.motion.xrel*0.5;
                 _phi -= event.motion.yrel*0.5;
-
-                cout << "theta=" << _theta << endl;
-                cout << "phi=" << _phi << endl;
 
                 t_point _forward = {0, 0, 0, 0};
 
